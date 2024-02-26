@@ -20,7 +20,7 @@ model User {
   mobile       String        @unique
   email        String        @unique
   accountType  AccountType
-  balance      Float         @default(40)
+  balance      Int           @default(40)
   nid          String        @unique
   transactions Transaction[]
 }
@@ -32,7 +32,7 @@ model Agent {
   mobile       String        @unique
   email        String        @unique
   accountType  AccountType
-  balance      Float         @default(100000)
+  balance      Int           @default(100000)
   nid          String        @unique
   requests     Request[]
   transactions Transaction[]
@@ -50,8 +50,8 @@ model Transaction {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   senderId   String   @db.ObjectId
   receiverId String   @db.ObjectId
-  amount     Float
-  fee        Float
+  amount     Int
+  fee        Int
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [senderId], references: [id])
   agent      Agent    @relation(fields: [receiverId], references: [id])
@@ -60,7 +60,7 @@ model Transaction {
 model Request {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   agentId   String   @db.ObjectId
-  amount    Float
+  amount    Int
   createdAt DateTime @default(now())
   agent     Agent    @relation(fields: [agentId], references: [id])
 }

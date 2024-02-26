@@ -1,6 +1,7 @@
 const bcrypt = require('bcryptjs');
 const prisma = require('../../prisma');
 const jwt = require("jsonwebtoken");
+const { jwtKey } = require('../helper');
 
 const registerUser = async (req, res) => {
     try {
@@ -73,52 +74,134 @@ const loginUser = async (req, res) => {
             return res.status(401).json({ msg: 'Invalid credentials' });
         }
 
-        // Fetch the admin ID
-        const admin = await prisma.admin.findFirst({ select: { id: true } });
 
-        // Generate JWT token
-        const payload = {
+        // Fetch the admin ID
+        // const admin = await prisma.admin.findUnique({ where: { id: _id } });
+
+        // Check if admin is null before accessing its id property
+  
+const token = jwt.sign({ user }, jwtKey, { expiresIn: "1h" });
+
+    // Set the token as a cookie
+    res.cookie("token", token, { httpOnly: true, maxAge: 3600000 }); 
+        // Send the user object in the response
+        res.json({
             user: {
                 id: user.id,
-                role: 'user', // You can add more details if needed
+                role: 'user',
                 mobile: user.mobile,
                 email: user.email,
                 accountType: user.accountType,
-                adminId: admin.id // Include the admin ID in the payload
+                // adminId: admin
             }
-        };
-
-        jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' }, (err, token) => {
-            if (err) throw err;
-            res.json({ token, adminId: admin.id }); // Include the admin ID in the response
         });
     } catch (error) {
         console.error(error);
         res.status(500).json({ msg: 'Server error' });
     }
 }
+// const sendMoney = async (req, res) => {
+//     try {
+//         const { senderId, receiverMobile, amount, pin } = req.body;
+
+//         // Check if the required fields are present in req.body
+//         if (!senderId || !receiverMobile || !amount || !pin) {
+//             return res.status(400).json({ msg: 'Missing required fields' });
+//         }
+
+//         // Find the sender user
+//         const sender = await prisma.user.findUnique({ where: { id: senderId } });
+
+//         // Verify the sender's pin
+//         const isPinValid = await bcrypt.compare(pin, sender.pin);
+//         if (!isPinValid) {
+//             return res.status(401).json({ msg: 'Invalid PIN' });
+//         }
+
+//         // Check if the sender has sufficient balance
+//         if (sender.balance < amount) {
+//             return res.status(400).json({ msg: 'Insufficient balance' });
+//         }
+
+//         // Calculate the send-money fee
+//         let fee = 0;
+//         if (amount > 100) {
+//             fee = 5;
+//         }
+
+//         // Deduct the amount and fee from the sender's balance
+//         const updatedSender = await prisma.user.update({
+//             where: { id: senderId },
+//             data: { balance: sender.balance - amount - fee }
+//         });
+
+//         // Find the receiver user
+//         const receiver = await prisma.user.findUnique({ where: { mobile: receiverMobile } });
+
+//         // If receiver doesn't exist, return error
+//         if (!receiver) {
+//             return res.status(404).json({ msg: 'Receiver not found' });
+//         }
+
+//         // Update the receiver's balance
+//         const updatedReceiver = await prisma.user.update({
+//             where: { mobile: receiverMobile },
+//             data: { balance: receiver.balance + amount }
+//         });
+
+//         // Create a transaction record
+//         const transaction = await prisma.transaction.create({
+//             data: {
+//                 senderId,
+//                 receiverId: receiver.id,
+//                 amount,
+//                 fee
+//             }
+//         });
+
+        // Update admin's balance
+        // const admin = await prisma.admin.update({
+        //     where: { id: 'admin_id' }, // You need to replace 'admin_id' with the actual admin id
+        //     data: { balance: { increment: fee } }
+        // });
+
+        // Send response with updated balances
+//         res.status(200).json({
+//             msg: 'Money sent successfully',
+//             sender: {
+//                 id: updatedSender.id,
+//                 name: updatedSender.name,
+//                 balance: updatedSender.balance
+//             },
+//             receiver: {
+//                 id: updatedReceiver.id,
+//                 name: updatedReceiver.name,
+//                 balance: updatedReceiver.balance
+//             },
+//             transaction
+//         });
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ msg: 'Server error' });
+//     }
+// };
+
 
 const sendMoney = async (req, res) => {
     try {
-        const { senderId, receiverMobile, amount, pin } = req.body;
+        const { senderId, receiverMobile, amount } = req.body;
 
         // Check if the required fields are present in req.body
-        if (!senderId || !receiverMobile || !amount || !pin) {
+        if (!senderId || !receiverMobile || !amount) {
             return res.status(400).json({ msg: 'Missing required fields' });
         }
 
         // Find the sender user
         const sender = await prisma.user.findUnique({ where: { id: senderId } });
 
-        // Verify the sender's pin
-        const isPinValid = await bcrypt.compare(pin, sender.pin);
-        if (!isPinValid) {
-            return res.status(401).json({ msg: 'Invalid PIN' });
-        }
-
-        // Check if the sender has sufficient balance
-        if (sender.balance < amount) {
-            return res.status(400).json({ msg: 'Insufficient balance' });
+        // Check if sender exists
+        if (!sender) {
+            return res.status(404).json({ msg: 'Sender not found' });
         }
 
         // Calculate the send-money fee
@@ -130,7 +213,7 @@ const sendMoney = async (req, res) => {
         // Deduct the amount and fee from the sender's balance
         const updatedSender = await prisma.user.update({
             where: { id: senderId },
-            data: { balance: sender.balance - amount - fee }
+            data: { balance: parseInt(sender.balance - amount - fee) }
         });
 
         // Find the receiver user
@@ -144,7 +227,7 @@ const sendMoney = async (req, res) => {
         // Update the receiver's balance
         const updatedReceiver = await prisma.user.update({
             where: { mobile: receiverMobile },
-            data: { balance: receiver.balance + amount }
+            data: { balance: parseInt(receiver.balance + amount) }
         });
 
         // Create a transaction record
@@ -155,12 +238,6 @@ const sendMoney = async (req, res) => {
                 amount,
                 fee
             }
-        });
-
-        // Update admin's balance
-        const admin = await prisma.admin.update({
-            where: { id: 'admin_id' }, // You need to replace 'admin_id' with the actual admin id
-            data: { balance: { increment: fee } }
         });
 
         // Send response with updated balances
@@ -182,9 +259,6 @@ const sendMoney = async (req, res) => {
         console.error(error);
         res.status(500).json({ msg: 'Server error' });
     }
-};
-
-
-  
+}
 
   module.exports = { registerUser,loginUser, sendMoney };

@@ -39,11 +39,12 @@ model Agent {
 }
 
 model Admin {
-  id     String @id @default(auto()) @map("_id") @db.ObjectId
-  name   String
-  mobile String @unique
-  email  String @unique
-  pin    String
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  name    String
+  mobile  String @unique
+  email   String @unique
+  pin     String
+  balance Int
 }
 
 model Transaction {

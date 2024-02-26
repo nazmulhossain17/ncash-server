@@ -261,4 +261,108 @@ const sendMoney = async (req, res) => {
     }
 }
 
-  module.exports = { registerUser,loginUser, sendMoney };
+
+
+
+
+const registerAgent = async (req, res) => {
+    try {
+        const { name, pin, mobile, email, accountType, nid } = req.body;
+
+        // Check if the required fields are present in req.body
+        if (!name || !pin || !mobile || !email || !accountType || !nid) {
+            return res.status(400).json({ msg: 'Missing required fields' });
+        }
+
+        // Check if the user already exists
+        const existingUser = await prisma.agent.findFirst({
+            where: {
+                OR: [{ mobile }, { email }]
+            }
+        });
+
+        if (existingUser) {
+            return res.status(400).json({ msg: 'User already exists' });
+        }
+
+        // Validate pin to be exactly 5 digits
+        if (!(/^\d{5}$/.test(pin))) {
+            return res.status(400).json({ msg: 'PIN must be a 5-digit number' });
+        }
+
+        // Hash the pin before storing it in the database
+        const hashedPin = await bcrypt.hash(pin, 10);
+
+        // Create a new user in the database
+        const newUser = await prisma.agent.create({
+            data: {
+                name,
+                pin: hashedPin,
+                mobile,
+                email,
+                accountType,
+                nid
+            }
+        });
+
+        // Send response with required fields including balance
+        res.status(201).json({
+            msg: 'Agent registered successfully',
+            user: {
+                name: newUser.name,
+                mobile: newUser.mobile,
+                email: newUser.email,
+                accountType: newUser.accountType,
+                balance: newUser.balance
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
+    }
+};
+
+
+const loginAgent = async (req, res) => {
+    const { mobile, pin } = req.body;
+    try {
+        const user = await prisma.agent.findUnique({ where: { mobile } });
+
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        const isMatch = await bcrypt.compare(pin, user.pin);
+
+        if (!isMatch) {
+            return res.status(401).json({ msg: 'Invalid credentials' });
+        }
+
+
+        // Fetch the admin ID
+        // const admin = await prisma.admin.findUnique({ where: { id: _id } });
+
+        // Check if admin is null before accessing its id property
+  
+const token = jwt.sign({ user }, jwtKey, { expiresIn: "1h" });
+
+    // Set the token as a cookie
+    res.cookie("token", token, { httpOnly: true, maxAge: 3600000 }); 
+        // Send the user object in the response
+        res.json({
+            user: {
+                id: user.id,
+                role: 'agent',
+                mobile: user.mobile,
+                email: user.email,
+                accountType: user.accountType,
+                // adminId: admin
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
+    }
+}
+
+
+  module.exports = { registerUser, registerAgent, loginAgent, loginUser, sendMoney };

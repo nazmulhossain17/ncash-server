@@ -1,6 +1,6 @@
 const express = require("express");
 const { registerUser, loginUser, sendMoney, registerAgent, loginAgent } = require("../controller/auth.controller");
-const prisma = require("../../prisma");
+
 
 const authRoute = express.Router();
 

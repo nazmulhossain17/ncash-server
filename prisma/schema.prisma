@@ -20,6 +20,7 @@ model User {
   mobile       String        @unique
   email        String        @unique
   accountType  AccountType
+  isAdmin      Boolean       @default(false)
   balance      Int           @default(40)
   nid          String        @unique
   transactions Transaction[]
@@ -32,6 +33,7 @@ model Agent {
   mobile       String        @unique
   email        String        @unique
   accountType  AccountType
+  isAdmin      Boolean       @default(false)
   balance      Int           @default(100000)
   nid          String        @unique
   requests     Request[]
@@ -39,23 +41,28 @@ model Agent {
 }
 
 model Admin {
-  id      String @id @default(auto()) @map("_id") @db.ObjectId
-  name    String
-  mobile  String @unique
-  email   String @unique
-  pin     String
-  balance Int
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  name         String
+  mobile       String        @unique
+  email        String        @unique
+  isAdmin      Boolean       @default(true)
+  pin          String
+  balance      Int           @default(0)
+  nid          String
+  transactions Transaction[]
 }
 
 model Transaction {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   senderId   String   @db.ObjectId
   receiverId String   @db.ObjectId
+  adminId    String   @db.ObjectId
   amount     Int
   fee        Int
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [senderId], references: [id])
   agent      Agent    @relation(fields: [receiverId], references: [id])
+  admin      Admin    @relation(fields: [adminId], references: [id])
 }
 
 model Request {

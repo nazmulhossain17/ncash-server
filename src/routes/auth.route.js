@@ -1,5 +1,5 @@
 const express = require("express");
-const { registerUser, loginUser, sendMoney, registerAgent, loginAgent } = require("../controller/auth.controller");
+const { registerUser, loginUser, sendMoney, registerAgent, loginAgent, logoutController } = require("../controller/auth.controller");
 
 
 const authRoute = express.Router();
@@ -12,6 +12,7 @@ authRoute.post("/create-user", registerUser)
 authRoute.post("/create-agent", registerAgent)
 authRoute.post("/login-agent", loginAgent)
 authRoute.post("/login-user", loginUser)
+authRoute.get("/logout", logoutController)
 authRoute.post("/send-money", sendMoney)
 
 

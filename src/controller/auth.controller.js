@@ -39,7 +39,7 @@ const registerUser = async (req, res) => {
                 mobile,
                 email,
                 accountType,
-                nid
+                nid,
             }
         });
 
@@ -51,7 +51,8 @@ const registerUser = async (req, res) => {
                 mobile: newUser.mobile,
                 email: newUser.email,
                 accountType: newUser.accountType,
-                balance: newUser.balance
+                balance: newUser.balance,
+                isAdmin: newUser.isAdmin
             }
         });
     } catch (error) {
@@ -363,6 +364,15 @@ const token = jwt.sign({ user }, jwtKey, { expiresIn: "1h" });
         res.status(500).json({ msg: 'Server error' });
     }
 }
+const logoutController = (req, res) => {
+    try {
+      res.clearCookie("token"); // Clear the 'token' cookie
+  
+      res.status(200).json({ message: "Logout successful" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Internal Server Error" });
+    }
+};
 
-
-  module.exports = { registerUser, registerAgent, loginAgent, loginUser, sendMoney };
+module.exports = { registerUser, registerAgent, loginAgent, logoutController, loginUser, sendMoney };

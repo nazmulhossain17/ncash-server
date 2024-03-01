@@ -1,15 +1,7 @@
-// const isAdminAuthenticated = (req, res, next) => {
-//         // Assuming admin authentication is implemented and adminId is set in the request
-//         const adminId = req.adminId;
-//         if (!adminId) {
-//           return res.status(401).json({ msg: 'Admin authentication failed' });
-//         }
-//         next();
-//       };
-
 const prisma = require("../../prisma");
 const bcrypt = require("bcryptjs")
-    
+const jwt = require("jsonwebtoken");    
+const { jwtKey } = require("../helper");
 
 const createAdmin = async (req, res) => {
     const { name, mobile, email, pin, nid } = req.body;
@@ -38,6 +30,46 @@ const createAdmin = async (req, res) => {
       console.error(error);
       res.status(500).json({ msg: 'Server error' });
     }
-  };
+};
 
-module.exports = {createAdmin}
+
+const loginAdmin = async (req, res) => {
+    const { mobile, pin } = req.body;
+    try {
+        const user = await prisma.admin.findUnique({ where: { mobile } });
+
+        if (!user) {
+            return res.status(404).json({ msg: 'Admin not found' });
+        }
+        const isMatch = await bcrypt.compare(pin, user.pin);
+
+        if (!isMatch) {
+            return res.status(401).json({ msg: 'Invalid credentials' });
+        }
+
+
+        // Fetch the admin ID
+        // const admin = await prisma.admin.findUnique({ where: { id: _id } });
+
+        // Check if admin is null before accessing its id property
+  
+const token = jwt.sign({ user }, jwtKey, { expiresIn: "1h" });
+
+    // Set the token as a cookie
+    res.cookie("token", token, { httpOnly: true, maxAge: 3600000 }); 
+        // Send the user object in the response
+        res.json({
+            user: {
+                id: user.id,
+                mobile: user.mobile,
+                email: user.email,
+                // adminId: admin
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: 'Server error' });
+    }
+}
+
+module.exports = {createAdmin, loginAdmin}
